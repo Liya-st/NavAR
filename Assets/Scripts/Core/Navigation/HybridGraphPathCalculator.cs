@@ -153,6 +153,11 @@ namespace NavAR.Core.Navigation
             return _lastReturnedNodeIds.Count == 0 ? new List<string>() : new List<string>(_lastReturnedNodeIds);
         }
 
+        public IReadOnlyList<GraphNode> GetLastNodePath()
+        {
+            return _lastGraphResult?.NodePath;
+        }
+
         private void CaptureNodeIdsForPrimaryStage(GraphRoutingResult graphResult)
         {
             _lastReturnedNodeIds.Clear();

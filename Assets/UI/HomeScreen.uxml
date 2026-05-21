@@ -18,20 +18,8 @@
                 <ui:Label text="Navigate your university with augmented reality precision and editorial-grade clarity." class="home-desc" />
 
                 <ui:Button name="BtnStartNavigation" text="Start Navigation" class="home-btn-primary" />
+                <ui:Button name="BtnOutdoorNavigation" text="Outdoor Navigation" class="home-btn-primary" />
                 <ui:Button name="BtnViewHelp" text="View Help" class="home-btn-secondary" />
-
-                <ui:VisualElement class="feature-card">
-                    <ui:VisualElement class="feature-badge-row">
-                        <ui:VisualElement class="feature-badge-icon" />
-                        <ui:Label text="NEW FEATURE" class="feature-badge" />
-                    </ui:VisualElement>
-
-                    <ui:Label text="Quick Start Guide" class="feature-title" />
-                    <ui:Label text="Learn how to calibrate your camera and use AR anchors to find the fastest route to your lecture hall." class="feature-desc" />
-                    <ui:Button name="BtnLaunchTutorial" text="Launch Tutorial" class="feature-link" />
-
-                    <ui:VisualElement class="feature-image-placeholder" />
-                </ui:VisualElement>
             </ui:VisualElement>
         </ui:ScrollView>
     </ui:VisualElement>

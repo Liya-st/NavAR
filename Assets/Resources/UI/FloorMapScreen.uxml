@@ -1,0 +1,54 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="ContextualScreens.uss" />
+
+    <ui:VisualElement class="context-screen floor-map-screen">
+        <ui:VisualElement class="context-top-bar">
+            <ui:Button name="BtnScreenBack" text="&#x2190;" class="context-back" />
+            <ui:Label text="Floor Map" class="context-top-title" />
+        </ui:VisualElement>
+
+        <ui:ScrollView class="context-scroll">
+            <ui:VisualElement class="context-content">
+                <ui:VisualElement class="map-preview">
+                    <ui:VisualElement class="map-grid-line map-grid-line-one" />
+                    <ui:VisualElement class="map-grid-line map-grid-line-two" />
+                    <ui:VisualElement class="map-route-line" />
+                    <ui:VisualElement class="map-pin map-pin-start" />
+                    <ui:VisualElement class="map-pin map-pin-destination" />
+                    <ui:Label text="Current floor overview" class="map-preview-label" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="ACTIVE ROUTE" class="context-section-label" />
+                    <ui:VisualElement class="map-status-row">
+                        <ui:Label text="Destination" class="map-status-label" />
+                        <ui:Label name="FloorMapDestinationValue" text="No active destination" class="map-status-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="map-status-row">
+                        <ui:Label text="Floor" class="map-status-label" />
+                        <ui:Label name="FloorMapFloorValue" text="Floor 0" class="map-status-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="map-status-row">
+                        <ui:Label text="Route" class="map-status-label" />
+                        <ui:Label name="FloorMapRouteValue" text="Route not active" class="map-status-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="NEARBY LANDMARKS" class="context-section-label" />
+                    <ui:Label text="Entrances and reference points" class="context-card-title" />
+                    <ui:Label text="Use door labels, lift lobbies, staircases, and visible QR anchors to confirm that you are following the correct corridor." class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="ROUTE ACTIONS" class="context-section-label" />
+                    <ui:Label text="Recover or continue" class="context-card-title" />
+                    <ui:Label text="If the AR path is unclear, rescan a nearby QR anchor. If the route is still active, return to navigation." class="context-card-body" />
+                    <ui:Button name="BtnContextRescan" text="Rescan QR Anchor" class="context-secondary-button" />
+                </ui:VisualElement>
+
+                <ui:Button name="BtnContextResumeNavigation" text="Back to Navigation" class="context-primary-button" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

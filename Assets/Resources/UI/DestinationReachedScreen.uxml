@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="ContextualScreens.uss" />
+
+    <ui:VisualElement class="context-screen destination-reached-screen">
+        <ui:VisualElement class="destination-reached-content">
+            <ui:VisualElement class="destination-reached-icon">
+                <ui:Label text="OK" class="destination-reached-icon-text" />
+            </ui:VisualElement>
+
+            <ui:Label text="Destination Reached" class="destination-reached-title" />
+            <ui:Label name="DestinationReachedName" text="You have arrived at your destination." class="destination-reached-subtitle" />
+
+            <ui:VisualElement class="context-card">
+                <ui:Label text="WHAT NOW" class="context-section-label" />
+                <ui:Label text="You can return to the home screen, choose another destination, or adjust settings before starting a new route." class="context-card-body" />
+            </ui:VisualElement>
+
+            <ui:Button name="BtnReturnHomeFromDestinationReached" text="Return to Home" class="context-primary-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

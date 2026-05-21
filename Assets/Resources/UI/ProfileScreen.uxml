@@ -1,0 +1,57 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="ContextualScreens.uss" />
+
+    <ui:VisualElement class="context-screen profile-screen">
+        <ui:VisualElement class="context-top-bar">
+            <ui:Button name="BtnScreenBack" text="&#x2190;" class="context-back" />
+            <ui:Label text="Profile" class="context-top-title" />
+        </ui:VisualElement>
+
+        <ui:ScrollView class="context-scroll">
+            <ui:VisualElement class="context-content">
+                <ui:VisualElement class="profile-header">
+                    <ui:VisualElement class="profile-avatar" />
+                    <ui:VisualElement class="profile-copy">
+                        <ui:Label text="Campus Navigator" class="context-title profile-title" />
+                        <ui:Label text="Personalize saved places, recent routes, and navigation preferences." class="context-subtitle profile-subtitle" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="profile-stats">
+                    <ui:VisualElement class="profile-stat">
+                        <ui:Label text="0" class="profile-stat-value" />
+                        <ui:Label text="Saved" class="profile-stat-label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="profile-stat">
+                        <ui:Label text="0" class="profile-stat-value" />
+                        <ui:Label text="Routes" class="profile-stat-label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="profile-stat">
+                        <ui:Label text="On" class="profile-stat-value" />
+                        <ui:Label text="Voice" class="profile-stat-label" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="SAVED PLACES" class="context-section-label" />
+                    <ui:Label text="Pin frequent destinations" class="context-card-title" />
+                    <ui:Label text="Keep lecture halls, labs, offices, and common service points ready for faster destination selection." class="context-card-body" />
+                    <ui:Button name="BtnContextStartNavigation" text="Browse Destinations" class="context-secondary-button" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="RECENT ROUTES" class="context-section-label" />
+                    <ui:Label text="Repeat common trips" class="context-card-title" />
+                    <ui:Label text="Recent navigation sessions can appear here after route history is connected to the profile service." class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="ACCOUNT &amp; PRIVACY" class="context-section-label" />
+                    <ui:Label text="Control your app preferences" class="context-card-title" />
+                    <ui:Label text="Manage accessibility defaults, privacy choices, and route data preferences from the settings screen." class="context-card-body" />
+                    <ui:Button name="BtnContextOpenSettings" text="Open Settings" class="context-secondary-button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

@@ -68,8 +68,12 @@ namespace NavAR.Bootstrapper
             services.Register(navigationSessionService);
             if (enableBackendSync)
             {
-                backendEventQueue = new SQLiteBackendEventQueue();
-                services.Register(backendEventQueue);
+                backendEventQueue = BuildBackendEventQueue();
+                if (backendEventQueue != null)
+                {
+                    services.Register(backendEventQueue);
+                }
+
                 backendApiClient = new BackendApiClient(this, backendBaseUrl, backendEventQueue);
                 backendApiClient.StartAutoFlush();
                 services.Register(backendApiClient);
@@ -106,6 +110,20 @@ namespace NavAR.Bootstrapper
             {
                 Debug.LogError($"[Bootstrapper] SQLite initialization failed. Falling back to MockMapRepository. Error: {ex.Message}");
                 return new MockMapRepository();
+            }
+        }
+
+        private IBackendEventQueue BuildBackendEventQueue()
+        {
+            try
+            {
+                Debug.Log("[Bootstrapper] Using SQLiteBackendEventQueue.");
+                return new SQLiteBackendEventQueue();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Bootstrapper] Backend event queue unavailable. Offline backend retry is disabled for this run. Error: {ex.Message}");
+                return null;
             }
         }
 

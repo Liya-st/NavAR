@@ -1,0 +1,390 @@
+.context-screen {
+    flex-grow: 1;
+    background-color: rgb(244, 248, 253);
+}
+
+.context-top-bar {
+    height: 76px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-color: rgb(249, 251, 255);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(226, 234, 246);
+}
+
+.context-back {
+    width: 36px;
+    height: 36px;
+    border-width: 0;
+    background-color: transparent;
+    color: rgb(7, 25, 56);
+    font-size: 22px;
+    -unity-font-style: bold;
+    margin-right: 10px;
+}
+
+.context-top-title {
+    color: rgb(7, 25, 56);
+    font-size: 17px;
+    -unity-font-style: bold;
+}
+
+.context-scroll {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.context-content {
+    width: 100%;
+    padding: 24px;
+}
+
+.context-hero {
+    width: 100%;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.context-hero-icon {
+    width: 96px;
+    height: 96px;
+    border-radius: 48px;
+    background-color: rgb(20, 111, 226);
+    margin-bottom: 16px;
+    background-repeat: no-repeat;
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+}
+
+.help-hero-icon {
+    background-image: url("../../UI/Icons/mdi--lightbulb.svg");
+}
+
+.context-title {
+    width: 100%;
+    color: rgb(6, 28, 67);
+    font-size: 28px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.context-subtitle {
+    width: 100%;
+    color: rgb(42, 55, 78);
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 10px;
+}
+
+.context-card {
+    width: 100%;
+    border-radius: 8px;
+    background-color: rgb(214, 225, 243);
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.context-section-label {
+    color: rgb(64, 77, 99);
+    font-size: 11px;
+    letter-spacing: 2px;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.context-card-title {
+    color: rgb(6, 28, 67);
+    font-size: 17px;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+    white-space: normal;
+}
+
+.context-card-body {
+    color: rgb(39, 52, 75);
+    font-size: 13px;
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.context-primary-button,
+.context-secondary-button {
+    width: 100%;
+    height: 54px;
+    border-width: 0;
+    border-radius: 27px;
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.context-primary-button {
+    background-color: rgb(20, 111, 226);
+    color: rgb(255, 255, 255);
+    margin-top: 4px;
+    margin-bottom: 12px;
+}
+
+.context-secondary-button {
+    background-color: rgb(238, 244, 253);
+    color: rgb(20, 88, 183);
+    margin-top: 8px;
+}
+
+.profile-header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.profile-avatar {
+    width: 86px;
+    height: 86px;
+    border-radius: 43px;
+    background-color: rgb(20, 111, 226);
+    background-image: url("../../UI/Icons/mdi--location.svg");
+    background-repeat: no-repeat;
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+    margin-right: 16px;
+}
+
+.profile-copy {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.profile-title,
+.profile-subtitle {
+    -unity-text-align: upper-left;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.profile-title {
+    font-size: 24px;
+}
+
+.profile-stats {
+    flex-direction: row;
+    margin-bottom: 16px;
+}
+
+.profile-stat {
+    flex-grow: 1;
+    height: 76px;
+    border-radius: 8px;
+    background-color: rgb(226, 235, 249);
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+}
+
+.profile-stat-value {
+    color: rgb(20, 111, 226);
+    font-size: 22px;
+    -unity-font-style: bold;
+}
+
+.profile-stat-label {
+    color: rgb(64, 77, 99);
+    font-size: 11px;
+    -unity-font-style: bold;
+}
+
+.map-preview {
+    height: 210px;
+    width: 100%;
+    border-radius: 8px;
+    background-color: rgb(29, 48, 78);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.map-preview-label {
+    position: absolute;
+    left: 18px;
+    bottom: 16px;
+    color: rgb(255, 255, 255);
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.map-grid-line {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.map-grid-line-one {
+    left: 26px;
+    top: 52px;
+    width: 78%;
+    height: 2px;
+}
+
+.map-grid-line-two {
+    left: 42%;
+    top: 20px;
+    width: 2px;
+    height: 78%;
+}
+
+.map-route-line {
+    position: absolute;
+    left: 20%;
+    top: 46%;
+    width: 58%;
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgb(74, 196, 255);
+}
+
+.map-pin {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+}
+
+.map-pin-start {
+    left: 18%;
+    top: 42%;
+    background-color: rgb(74, 196, 255);
+}
+
+.map-pin-destination {
+    left: 76%;
+    top: 42%;
+    background-color: rgb(255, 210, 77);
+}
+
+.map-status-row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.map-status-label {
+    color: rgb(64, 77, 99);
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.map-status-value {
+    color: rgb(6, 28, 67);
+    font-size: 13px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-right;
+}
+
+.destination-reached-screen {
+    justify-content: center;
+    align-items: center;
+}
+
+.destination-reached-content {
+    width: 100%;
+    padding: 24px;
+    align-items: center;
+}
+
+.destination-reached-icon {
+    width: 126px;
+    height: 126px;
+    border-radius: 63px;
+    background-color: rgb(20, 111, 226);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.destination-reached-icon-text {
+    color: rgb(255, 255, 255);
+    font-size: 34px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.destination-reached-title {
+    width: 100%;
+    color: rgb(6, 28, 67);
+    font-size: 30px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 10px;
+}
+
+.destination-reached-subtitle {
+    width: 100%;
+    color: rgb(39, 52, 75);
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 24px;
+}
+
+.exit-prompt-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    justify-content: center;
+    align-items: center;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.exit-prompt-dialog {
+    width: 100%;
+    max-width: 360px;
+    border-radius: 8px;
+    background-color: rgb(255, 255, 255);
+    padding: 20px;
+}
+
+.exit-prompt-title {
+    color: rgb(6, 28, 67);
+    font-size: 20px;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.exit-prompt-body {
+    color: rgb(39, 52, 75);
+    font-size: 14px;
+    white-space: normal;
+    margin-bottom: 18px;
+}
+
+.exit-prompt-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.exit-prompt-button {
+    width: 104px;
+    height: 44px;
+    border-width: 0;
+    border-radius: 22px;
+    margin-left: 8px;
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.exit-prompt-primary {
+    background-color: rgb(20, 111, 226);
+    color: rgb(255, 255, 255);
+}
+
+.exit-prompt-secondary {
+    background-color: rgb(226, 234, 247);
+    color: rgb(7, 25, 56);
+}

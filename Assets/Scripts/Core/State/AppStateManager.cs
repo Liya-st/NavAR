@@ -14,6 +14,7 @@ namespace NavAR.Core.State
         PositionLost,
         Feedback,
         ComingSoon,
+        DestinationReached = 11,
         // Backward-compatible alias while Presentation is migrated to Explore.
         DestinationSelection = Explore,
         FloorTransition = 10 // Placed here for your future multi-floor epic!

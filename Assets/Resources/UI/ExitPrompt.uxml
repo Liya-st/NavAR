@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="ContextualScreens.uss" />
+
+    <ui:VisualElement name="AndroidBackExitPrompt" class="exit-prompt-overlay">
+        <ui:VisualElement class="exit-prompt-dialog">
+            <ui:Label text="Exit NavAR?" class="exit-prompt-title" />
+            <ui:Label text="Press Exit to close the app, or stay on the home screen." class="exit-prompt-body" />
+
+            <ui:VisualElement class="exit-prompt-actions">
+                <ui:Button name="BtnExitPromptStay" text="Stay" class="exit-prompt-button exit-prompt-secondary" />
+                <ui:Button name="BtnExitPromptExit" text="Exit" class="exit-prompt-button exit-prompt-primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

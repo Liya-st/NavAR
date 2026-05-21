@@ -22,6 +22,7 @@ namespace NavAR.Core.Navigation
         private float _offRouteAccumulated;
         private bool _offRouteRaised;
         private bool _canCompleteNavigation = true;
+        private bool _destinationReachedRaised;
 
         public event Action<GuidanceEvent> OnGuidanceEvent;
         public bool HasActiveRoute => _route.Count >= 2;
@@ -62,6 +63,7 @@ namespace NavAR.Core.Navigation
             _offRouteAccumulated = 0f;
             _offRouteRaised = false;
             _canCompleteNavigation = canCompleteNavigation;
+            _destinationReachedRaised = false;
         }
 
         public void Reset()
@@ -75,6 +77,7 @@ namespace NavAR.Core.Navigation
             _offRouteAccumulated = 0f;
             _offRouteRaised = false;
             _canCompleteNavigation = true;
+            _destinationReachedRaised = false;
         }
 
         public void Tick(Vector3 userWorldPosition, Vector3 userForward, float deltaTime)
@@ -138,8 +141,9 @@ namespace NavAR.Core.Navigation
                         Emit(GuidanceEventType.TurnInstructionReady, turn, GuidanceSeverity.Info, null, targetNodeIndex, userWorldPosition);
                     }
 
-                    if (_canCompleteNavigation && _isForward && targetNodeIndex == _route.Count - 1)
+                    if (_canCompleteNavigation && !_destinationReachedRaised && _isForward && targetNodeIndex == _route.Count - 1)
                     {
+                        _destinationReachedRaised = true;
                         Emit(GuidanceEventType.DestinationReached, "Destination reached.", GuidanceSeverity.Info, 0f, targetNodeIndex, userWorldPosition);
                     }
                 }

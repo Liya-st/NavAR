@@ -1,0 +1,43 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="ContextualScreens.uss" />
+
+    <ui:VisualElement class="context-screen help-screen">
+        <ui:VisualElement class="context-top-bar">
+            <ui:Button name="BtnScreenBack" text="&#x2190;" class="context-back" />
+            <ui:Label text="Help Center" class="context-top-title" />
+        </ui:VisualElement>
+
+        <ui:ScrollView class="context-scroll">
+            <ui:VisualElement class="context-content">
+                <ui:VisualElement class="context-hero help-hero">
+                    <ui:VisualElement class="context-hero-icon help-hero-icon" />
+                    <ui:Label text="Navigation help" class="context-title" />
+                    <ui:Label text="Quick answers for scanning, positioning, route recovery, and accessibility while using indoor AR navigation." class="context-subtitle" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="START A ROUTE" class="context-section-label" />
+                    <ui:Label text="1. Choose a destination from Explore." class="context-card-title" />
+                    <ui:Label text="2. Scan the nearest NavAR QR anchor so the app can place you on the correct floor." class="context-card-body" />
+                    <ui:Label text="3. Follow the AR route and listen for turn guidance as you approach instruction points." class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="WHEN POSITION IS LOST" class="context-section-label" />
+                    <ui:Label text="Rescan nearby anchor" class="context-card-title" />
+                    <ui:Label text="Move to a visible wall marker or doorway QR code, keep the camera steady, and rescan to recover your location." class="context-card-body" />
+                    <ui:Button name="BtnContextRescan" text="Open Scanner" class="context-secondary-button" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="ACCESSIBILITY" class="context-section-label" />
+                    <ui:Label text="Make guidance easier to follow" class="context-card-title" />
+                    <ui:Label text="Turn on voice guidance, increase text size, enable high contrast, or prefer elevator routing from Settings." class="context-card-body" />
+                    <ui:Button name="BtnContextOpenSettings" text="Open Settings" class="context-secondary-button" />
+                </ui:VisualElement>
+
+                <ui:Button name="BtnContextStartNavigation" text="Start Navigation" class="context-primary-button" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

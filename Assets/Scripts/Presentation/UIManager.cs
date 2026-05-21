@@ -1,5 +1,8 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+using UnityEngine.InputSystem;
+#endif
 using NavAR.Core.State; // This is the state folder from Stage 3
 using NavAR.Core.Interfaces; // For IQrScannerService
 using NavAR.Presentation.Controllers;
@@ -54,6 +57,27 @@ namespace NavAR.Presentation
             public string DestinationName;
             public int FloorId;
         }
+
+        private enum ContextualPanelKind
+        {
+            None,
+            Help,
+            FloorMap,
+            About
+        }
+
+        private readonly struct UiHistoryEntry
+        {
+            public UiHistoryEntry(AppState state, ContextualPanelKind contextualPanel)
+            {
+                State = state;
+                ContextualPanel = contextualPanel;
+            }
+
+            public AppState State { get; }
+            public ContextualPanelKind ContextualPanel { get; }
+        }
+
         [Header("Screen Assets")]
         [SerializeField] private VisualTreeAsset splashScreenAsset;
         [SerializeField] private VisualTreeAsset homeScreenAsset;
@@ -64,11 +88,20 @@ namespace NavAR.Presentation
         [SerializeField] private VisualTreeAsset arNavigationAsset;
         [SerializeField] private VisualTreeAsset positionLostAsset;
         [SerializeField] private VisualTreeAsset feedbackScreenAsset;
-        [SerializeField] private VisualTreeAsset comingSoonScreenAsset;
+        [SerializeField] private VisualTreeAsset helpScreenAsset;
+        [SerializeField] private VisualTreeAsset floorMapScreenAsset;
+        [SerializeField] private VisualTreeAsset destinationReachedScreenAsset;
+        [SerializeField] private VisualTreeAsset exitPromptAsset;
         [SerializeField] private VisualTreeAsset floorTransitionScreenAsset;
         [SerializeField] private VisualTreeAsset destinationItemAsset;
+
+        [Header("Home Actions")]
+        [SerializeField] private UnityEngine.UI.Button btnOutdoorNavigation;
         [Header("Navigation Scene Context")]
         [SerializeField] private NavigationSceneContext navigationSceneContext;
+
+        [Header("Navigation Markers")]
+        [SerializeField] private NavigationMarkerManager markerManager;
 
         [Header("Diagnostics")]
         [SerializeField] private bool enableUiDiagnostics = true;
@@ -85,9 +118,11 @@ namespace NavAR.Presentation
         private VisualElement _root;
         private const string HighContrastClass = "high-contrast";
         private const string SettingsPrefPrefix = "NavAR.Settings.";
-        private const string HelpVideoUrl = "https://youtu.be/Rc2k_8skxtI?si=zCrgETPdQ2VPxCle";
         private bool _settingsLoaded;
-        private NavigationBarController _navigationBarController;
+        private Button _navHome;
+        private Button _navExplore;
+        private Button _navSettings;
+        private VisualElement _bottomNavBar;
         private AppState _lastNonOverlayState = AppState.Home;
         private AppStateManager _stateManager;
         private IQrScannerService _qrScannerService;
@@ -118,6 +153,11 @@ namespace NavAR.Presentation
         private NavigationSessionService _navigationSessionService;
         private BackendApiClient _backendApiClient;
         private NavigationCompletionSnapshot _lastNavigationSnapshot;
+        private readonly Stack<UiHistoryEntry> _uiHistory = new Stack<UiHistoryEntry>();
+        private ContextualPanelKind _activeContextualPanel = ContextualPanelKind.None;
+        private ContextualPanelKind _nextContextualPanel = ContextualPanelKind.None;
+        private bool _isRestoringHistory;
+        private VisualElement _exitPromptOverlay;
         private bool _hasSmoothedCameraPosition;
         private Vector3 _smoothedCameraPosition;
         private bool _hasLastDynamicUpdatePosition;
@@ -133,6 +173,14 @@ namespace NavAR.Presentation
         [Header("Navigation Context Retry")]
         [SerializeField] private float navigationContextResolveTimeoutSeconds = 12f;
         [SerializeField] private float navigationContextResolvePollIntervalSeconds = 0.25f;
+
+        private void Awake()
+        {
+            if (btnOutdoorNavigation != null)
+            {
+                btnOutdoorNavigation.onClick.AddListener(OnOutdoorNavigationClicked);
+            }
+        }
 
         public void Initialize(AppStateManager stateManager, IQrScannerService qrScannerService, IMapRepository mapRepository, IFloorSceneTransitionService floorTransitionService = null, ServiceContainer services = null)
         {
@@ -175,8 +223,7 @@ namespace NavAR.Presentation
 
                 ValidateScreenAssetAssignments();
 
-                _navigationBarController = new NavigationBarController(_root, SetState);
-                _navigationBarController.Wire();
+                ConfigureNavigationBar();
 
                 _stateManager.OnStateChanged += HandleStateChange;
                 ConfigureScreenPresenters();
@@ -291,15 +338,14 @@ namespace NavAR.Presentation
             _screenPresenters = new Dictionary<AppState, IScreenPresenter>
             {
                 [AppState.Splash] = new SplashScreenPresenter(splashScreenAsset),
-                [AppState.Home] = new HomeScreenPresenter(homeScreenAsset, SetState, OnOpenHelpVideo, OnOpenHelpVideo),
+                [AppState.Home] = new HomeScreenPresenter(homeScreenAsset, SetState, OnOpenHelpPanel, null),
                 [AppState.Explore] = new ExploreScreenPresenter(destinationScreenAsset, SetState, PopulateDestinationList),
                 [AppState.QrScanning] = new QrScanScreenPresenter(qrScannerAsset, _qrScannerService, OnQrCodeFound, SetState, HasCameraPermission),
                 [AppState.Permission] = new PermissionScreenPresenter(permissionScreenAsset, SetState, RequestCameraPermission),
                 [AppState.Navigating] = new NavigatingScreenPresenter(arNavigationAsset, SetState, () => _lastNonOverlayState, OnToggleVoiceGuidance, OnOpenFloorMap, EndNavigationEarly),
                 [AppState.PositionLost] = new PositionLostScreenPresenter(positionLostAsset, SetState),
-                [AppState.Settings] = new SettingsScreenPresenter(settingsScreenAsset, SetState, OnSignOutRequested, OnAboutRequested, OnOpenHelpVideo, ApplySettings),
-                [AppState.Feedback] = new FeedbackScreenPresenter(feedbackScreenAsset, SetState, () => _lastNonOverlayState, OnSubmitFeedback),
-                [AppState.ComingSoon] = new ComingSoonScreenPresenter(comingSoonScreenAsset, SetState, () => _lastNonOverlayState)
+                [AppState.Settings] = new SettingsScreenPresenter(settingsScreenAsset, SetState, null, OnOpenAboutPanel, OnOpenHelpPanel, ApplySettings),
+                [AppState.Feedback] = new FeedbackScreenPresenter(feedbackScreenAsset, SetState, () => _lastNonOverlayState, OnSubmitFeedback)
             };
         }
 
@@ -583,6 +629,11 @@ namespace NavAR.Presentation
             {
                 _stateManager.OnStateChanged -= HandleStateChange;
             }
+
+            if (btnOutdoorNavigation != null)
+            {
+                btnOutdoorNavigation.onClick.RemoveListener(OnOutdoorNavigationClicked);
+            }
         }
 
         private void EnsureSettingsLoaded()
@@ -644,6 +695,22 @@ namespace NavAR.Presentation
             PlayerPrefs.Save();
         }
 
+        private void Update()
+        {
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+            var keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            {
+                HandleAndroidBackButton();
+            }
+#else
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                HandleAndroidBackButton();
+            }
+#endif
+        }
+
         private void HandleStateChange(AppState newState)
         {
             if (enableUiDiagnostics)
@@ -651,8 +718,25 @@ namespace NavAR.Presentation
                 Debug.Log($"UIManager: Entering state '{newState}'.");
             }
 
+            DismissExitPrompt();
+
+            if (newState == AppState.ComingSoon)
+            {
+                _activeContextualPanel = ResolveContextualPanelForNextRoute();
+            }
+            else
+            {
+                _activeContextualPanel = ContextualPanelKind.None;
+                _nextContextualPanel = ContextualPanelKind.None;
+            }
+
+            if (newState == AppState.Home)
+            {
+                _uiHistory.Clear();
+            }
+
             _contentContainer.Clear();
-            _navigationBarController?.UpdateActive(newState);
+            UpdateNavigationBarActive(newState);
             EnsureSettingsLoaded();
 
             if (!IsOverlayState(newState))
@@ -677,11 +761,93 @@ namespace NavAR.Presentation
             }
 
             _screenStateMachine?.Execute(newState);
+            if (newState == AppState.Home)
+            {
+                ConfigureHomeScreenActions();
+            }
+
             if (newState == AppState.Navigating)
             {
                 SyncNavigationUi();
                 StartDynamicNavigationLoop();
             }
+        }
+
+        private void ConfigureNavigationBar()
+        {
+            _navHome = _root.Q<Button>("NavHome");
+            _navExplore = _root.Q<Button>("NavExplore");
+            _navSettings = _root.Q<Button>("NavSettings");
+            _bottomNavBar = _root.Q<VisualElement>("BottomNavBar");
+
+            var removedNavItem = _root.Q<Button>("NavSaved");
+            if (removedNavItem != null)
+            {
+                removedNavItem.style.display = DisplayStyle.None;
+                removedNavItem.pickingMode = PickingMode.Ignore;
+            }
+
+            if (_navHome != null)
+            {
+                _navHome.clicked += () => SetState(AppState.Home);
+            }
+
+            if (_navExplore != null)
+            {
+                _navExplore.clicked += () => SetState(AppState.Explore);
+            }
+
+            if (_navSettings != null)
+            {
+                _navSettings.clicked += () => SetState(AppState.Settings);
+            }
+        }
+
+        private void UpdateNavigationBarActive(AppState state)
+        {
+            var isMainScreen = state == AppState.Home
+                || state == AppState.Explore
+                || state == AppState.DestinationSelection
+                || state == AppState.Settings
+                || state == AppState.ComingSoon; // Keep bottom nav visible for contextual panels (Help, FloorMap, About)
+
+            if (_bottomNavBar != null)
+            {
+                _bottomNavBar.style.display = isMainScreen ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            SetNavItemActive(_navHome, isMainScreen && state == AppState.Home);
+            SetNavItemActive(_navExplore, isMainScreen && (state == AppState.Explore || state == AppState.DestinationSelection));
+            SetNavItemActive(_navSettings, isMainScreen && state == AppState.Settings);
+        }
+
+        private static void SetNavItemActive(Button navButton, bool isActive)
+        {
+            if (navButton == null)
+            {
+                return;
+            }
+
+            const string activeClass = "nav-item-active";
+            if (isActive)
+            {
+                navButton.AddToClassList(activeClass);
+            }
+            else
+            {
+                navButton.RemoveFromClassList(activeClass);
+            }
+        }
+
+        private void ConfigureHomeScreenActions()
+        {
+            var outdoorButton = _contentContainer.Q<Button>("BtnOutdoorNavigation");
+            if (outdoorButton == null)
+            {
+                return;
+            }
+
+            outdoorButton.clicked += OnOutdoorNavigationClicked;
         }
 
         private void ConfigureScreenStateMachine()
@@ -694,10 +860,11 @@ namespace NavAR.Presentation
             _screenStateMachine.RegisterAllowedTransition(AppState.Explore, AppState.Home, AppState.QrScanning, AppState.Settings, AppState.ComingSoon);
             _screenStateMachine.RegisterAllowedTransition(AppState.QrScanning, AppState.Permission, AppState.Explore, AppState.Navigating, AppState.Home);
             _screenStateMachine.RegisterAllowedTransition(AppState.Permission, AppState.QrScanning, AppState.Home);
-            _screenStateMachine.RegisterAllowedTransition(AppState.Navigating, AppState.Explore, AppState.Home, AppState.Feedback, AppState.PositionLost, AppState.FloorTransition, AppState.QrScanning, AppState.ComingSoon, AppState.Settings);
+            _screenStateMachine.RegisterAllowedTransition(AppState.Navigating, AppState.Explore, AppState.Home, AppState.DestinationReached, AppState.Feedback, AppState.PositionLost, AppState.FloorTransition, AppState.QrScanning, AppState.ComingSoon, AppState.Settings);
             _screenStateMachine.RegisterAllowedTransition(AppState.FloorTransition, AppState.Navigating, AppState.Home);
             _screenStateMachine.RegisterAllowedTransition(AppState.PositionLost, AppState.QrScanning, AppState.Navigating, AppState.Home);
             _screenStateMachine.RegisterAllowedTransition(AppState.Settings, AppState.Home, AppState.Explore, AppState.Navigating, AppState.ComingSoon);
+            _screenStateMachine.RegisterAllowedTransition(AppState.DestinationReached, AppState.Home);
             _screenStateMachine.RegisterAllowedTransition(AppState.Feedback, AppState.Home, AppState.Explore, AppState.Navigating);
             _screenStateMachine.RegisterAllowedTransition(AppState.ComingSoon, AppState.Home, AppState.Explore, AppState.Navigating, AppState.Settings, AppState.Feedback);
 
@@ -710,8 +877,9 @@ namespace NavAR.Presentation
             _screenStateMachine.Register(AppState.FloorTransition, ShowFloorTransitionScreen);
             _screenStateMachine.Register(AppState.PositionLost, () => ShowPresenter(AppState.PositionLost));
             _screenStateMachine.Register(AppState.Settings, () => ShowPresenter(AppState.Settings));
+            _screenStateMachine.Register(AppState.DestinationReached, ShowDestinationReachedScreen);
             _screenStateMachine.Register(AppState.Feedback, () => ShowPresenter(AppState.Feedback));
-            _screenStateMachine.Register(AppState.ComingSoon, () => ShowPresenter(AppState.ComingSoon));
+            _screenStateMachine.Register(AppState.ComingSoon, ShowContextualPanel);
             _screenStateMachine.RegisterFallback(() => ShowPresenter(AppState.Home));
         }
 
@@ -787,6 +955,153 @@ namespace NavAR.Presentation
             if (enableUiDiagnostics)
             {
                 Debug.Log($"UIManager: Showing floor transition prompt for floor {promptFloorId}.");
+            }
+        }
+
+        private void ShowDestinationReachedScreen()
+        {
+            var destinationName = _lastNavigationSnapshot?.DestinationName;
+            if (string.IsNullOrWhiteSpace(destinationName))
+            {
+                destinationName = _stateManager?.Context?.CurrentDestination?.name;
+            }
+
+            if (string.IsNullOrWhiteSpace(destinationName))
+            {
+                destinationName = "your destination";
+            }
+
+            var asset = destinationReachedScreenAsset != null
+                ? destinationReachedScreenAsset
+                : Resources.Load<VisualTreeAsset>("UI/DestinationReachedScreen");
+            if (asset == null)
+            {
+                Debug.LogError("UIManager: Missing destination reached screen asset.");
+                return;
+            }
+
+            var instance = asset.Instantiate();
+            instance.style.flexGrow = 1;
+
+            var destinationLabel = instance.Q<Label>("DestinationReachedName");
+            if (destinationLabel != null)
+            {
+                destinationLabel.text = $"You have arrived at {destinationName}.";
+            }
+
+            var returnButton = instance.Q<Button>("BtnReturnHomeFromDestinationReached");
+            if (returnButton != null)
+            {
+                returnButton.clicked += ReturnHomeFromDestinationReached;
+            }
+
+            _contentContainer.Add(instance);
+
+            if (enableUiDiagnostics)
+            {
+                Debug.Log($"UIManager: Showing destination reached screen for '{destinationName}'.");
+            }
+        }
+
+        private void ShowContextualPanel()
+        {
+            var panel = _activeContextualPanel == ContextualPanelKind.None
+                ? ContextualPanelKind.Help
+                : _activeContextualPanel;
+
+            var asset = ResolveContextualScreenAsset(panel);
+            if (asset == null)
+            {
+                Debug.LogError($"UIManager: Missing contextual screen asset for {panel}.");
+                return;
+            }
+
+            var instance = asset.Instantiate();
+            instance.style.flexGrow = 1;
+            _contentContainer.Add(instance);
+            BindContextualScreen(panel, instance);
+        }
+
+        private VisualTreeAsset ResolveContextualScreenAsset(ContextualPanelKind panel)
+        {
+            switch (panel)
+            {
+                case ContextualPanelKind.Help:
+                    return helpScreenAsset != null ? helpScreenAsset : Resources.Load<VisualTreeAsset>("UI/HelpScreen");
+                case ContextualPanelKind.FloorMap:
+                    return floorMapScreenAsset != null ? floorMapScreenAsset : Resources.Load<VisualTreeAsset>("UI/FloorMapScreen");
+                case ContextualPanelKind.About:
+                    return Resources.Load<VisualTreeAsset>("UI/AboutScreen");
+                default:
+                    return helpScreenAsset != null ? helpScreenAsset : Resources.Load<VisualTreeAsset>("UI/HelpScreen");
+            }
+        }
+
+        private void BindContextualScreen(ContextualPanelKind panel, VisualElement root)
+        {
+            var backButton = root.Q<Button>("BtnScreenBack");
+            if (backButton != null)
+            {
+                backButton.clicked += HandleAndroidBackButton;
+            }
+
+            var startNavigation = root.Q<Button>("BtnContextStartNavigation");
+            if (startNavigation != null)
+            {
+                startNavigation.clicked += () => SetState(AppState.Explore);
+            }
+
+            var openSettings = root.Q<Button>("BtnContextOpenSettings");
+            if (openSettings != null)
+            {
+                openSettings.clicked += () => SetState(AppState.Settings);
+            }
+
+            var rescan = root.Q<Button>("BtnContextRescan");
+            if (rescan != null)
+            {
+                rescan.clicked += () => SetState(AppState.QrScanning);
+            }
+
+            var resumeNavigation = root.Q<Button>("BtnContextResumeNavigation");
+            if (resumeNavigation != null)
+            {
+                resumeNavigation.clicked += HandleAndroidBackButton;
+            }
+
+            var visitWebsite = root.Q<Button>("BtnVisitWebsite");
+            if (visitWebsite != null)
+            {
+                visitWebsite.clicked += () => Application.OpenURL("https://navar.example");
+            }
+
+            if (panel == ContextualPanelKind.FloorMap)
+            {
+                PopulateFloorMapScreen(root);
+            }
+        }
+
+        private void PopulateFloorMapScreen(VisualElement root)
+        {
+            var destination = _stateManager?.Context?.CurrentDestination;
+            var destinationValue = root.Q<Label>("FloorMapDestinationValue");
+            if (destinationValue != null)
+            {
+                destinationValue.text = destination?.name ?? "No active destination";
+            }
+
+            var floorValue = root.Q<Label>("FloorMapFloorValue");
+            if (floorValue != null)
+            {
+                floorValue.text = $"Floor {_stateManager?.Context?.CurrentFloorId ?? 0}";
+            }
+
+            var routeValue = root.Q<Label>("FloorMapRouteValue");
+            if (routeValue != null)
+            {
+                routeValue.text = _navigationProgressTracker != null && _navigationProgressTracker.HasActiveRoute
+                    ? "AR route active"
+                    : "Route not active";
             }
         }
 
@@ -909,7 +1224,6 @@ namespace NavAR.Presentation
             ValidateAsset(arNavigationAsset, nameof(arNavigationAsset));
             ValidateAsset(positionLostAsset, nameof(positionLostAsset));
             ValidateAsset(feedbackScreenAsset, nameof(feedbackScreenAsset));
-            ValidateAsset(comingSoonScreenAsset, nameof(comingSoonScreenAsset));
             ValidateAsset(floorTransitionScreenAsset, nameof(floorTransitionScreenAsset));
             ValidateAsset(destinationItemAsset, nameof(destinationItemAsset));
         }
@@ -934,29 +1248,179 @@ namespace NavAR.Presentation
                 || state == AppState.QrScanning
                 || state == AppState.FloorTransition
                 || state == AppState.PositionLost
+                || state == AppState.DestinationReached
                 || state == AppState.Feedback
                 || state == AppState.ComingSoon;
         }
 
         private void SetState(AppState state)
         {
+            var currentState = _stateManager.CurrentState;
+            var currentContextPanel = _activeContextualPanel;
+
+            if (state == AppState.ComingSoon && _nextContextualPanel == ContextualPanelKind.None)
+            {
+                _nextContextualPanel = ContextualPanelKind.Help;
+            }
+
             if (_screenStateMachine != null)
             {
-                var current = _stateManager.CurrentState;
-                if (!_screenStateMachine.TryTransition(current, state, out var resolvedState))
+                if (!_screenStateMachine.TryTransition(currentState, state, out var resolvedState))
                 {
-                    Debug.LogWarning($"UIManager: Blocked invalid transition '{current}' -> '{state}'.");
+                    Debug.LogWarning($"UIManager: Blocked invalid transition '{currentState}' -> '{state}'.");
                     return;
                 }
 
                 state = resolvedState;
             }
 
+            if (!_isRestoringHistory && ShouldPushHistory(currentState, state))
+            {
+                _uiHistory.Push(new UiHistoryEntry(currentState, currentContextPanel));
+            }
+
             if (enableUiDiagnostics)
             {
-                Debug.Log($"UIManager: SetState requested -> '{_stateManager.CurrentState}' to '{state}'.");
+                Debug.Log($"UIManager: SetState requested -> '{currentState}' to '{state}'.");
             }
             _stateManager.SetState(state);
+        }
+
+        private bool ShouldPushHistory(AppState current, AppState next)
+        {
+            if (current == AppState.Splash || current == next)
+            {
+                return false;
+            }
+
+            if (current == AppState.Home && next == AppState.Home)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private ContextualPanelKind ResolveContextualPanelForNextRoute()
+        {
+            var panel = _nextContextualPanel;
+            _nextContextualPanel = ContextualPanelKind.None;
+            return panel == ContextualPanelKind.None ? ContextualPanelKind.Help : panel;
+        }
+
+        private void NavigateToContextualPanel(ContextualPanelKind panel)
+        {
+            _nextContextualPanel = panel;
+            SetState(AppState.ComingSoon);
+        }
+
+        private void HandleAndroidBackButton()
+        {
+            if (_exitPromptOverlay != null)
+            {
+                DismissExitPrompt();
+                return;
+            }
+
+            if (_stateManager == null)
+            {
+                return;
+            }
+
+            if (_stateManager.CurrentState == AppState.Home)
+            {
+                ShowExitPrompt();
+                return;
+            }
+
+            if (_uiHistory.Count > 0)
+            {
+                RestoreHistoryEntry(_uiHistory.Pop());
+                return;
+            }
+
+            _isRestoringHistory = true;
+            try
+            {
+                _stateManager.SetState(AppState.Home);
+            }
+            finally
+            {
+                _isRestoringHistory = false;
+            }
+        }
+
+        private void RestoreHistoryEntry(UiHistoryEntry entry)
+        {
+            _isRestoringHistory = true;
+            _nextContextualPanel = entry.ContextualPanel;
+            try
+            {
+                if (_stateManager.CurrentState == entry.State)
+                {
+                    HandleStateChange(entry.State);
+                }
+                else
+                {
+                    _stateManager.SetState(entry.State);
+                }
+            }
+            finally
+            {
+                _isRestoringHistory = false;
+            }
+        }
+
+        private void ShowExitPrompt()
+        {
+            if (_root == null || _exitPromptOverlay != null)
+            {
+                return;
+            }
+
+            var asset = exitPromptAsset != null
+                ? exitPromptAsset
+                : Resources.Load<VisualTreeAsset>("UI/ExitPrompt");
+            if (asset == null)
+            {
+                Debug.LogError("UIManager: Missing exit prompt asset.");
+                return;
+            }
+
+            var overlay = asset.Instantiate();
+            overlay.style.flexGrow = 1;
+
+            var stayButton = overlay.Q<Button>("BtnExitPromptStay");
+            if (stayButton != null)
+            {
+                stayButton.clicked += DismissExitPrompt;
+            }
+
+            var exitButton = overlay.Q<Button>("BtnExitPromptExit");
+            if (exitButton != null)
+            {
+                exitButton.clicked += ExitApplication;
+            }
+
+            _root.Add(overlay);
+            _exitPromptOverlay = overlay;
+        }
+
+        private void DismissExitPrompt()
+        {
+            if (_exitPromptOverlay == null)
+            {
+                return;
+            }
+
+            _exitPromptOverlay.RemoveFromHierarchy();
+            _exitPromptOverlay = null;
+        }
+
+        private void ExitApplication()
+        {
+            DismissExitPrompt();
+            Application.Quit();
         }
 
         private void RequestCameraPermission()
@@ -977,7 +1441,7 @@ namespace NavAR.Presentation
 
         private void OnOpenFloorMap()
         {
-            SetState(AppState.ComingSoon);
+            NavigateToContextualPanel(ContextualPanelKind.FloorMap);
         }
 
         public void BeginFloorTransition(int targetFloorId, string targetFloorLabel = null, string transitionNodeId = null)
@@ -1161,6 +1625,7 @@ namespace NavAR.Presentation
 
                         _navigationProgressTracker?.InitializeRoute(pathCorners, canCompleteNavigation);
                         UpdateRouteNodeIdsForSession();
+                        UpdateNavigationMarkersForActiveRoute();
                         if (setNavigatingOnSuccess || (_navigationSessionService != null && !_navigationSessionService.HasActiveSession))
                         {
                             EnsureNavigationSessionStarted();
@@ -1265,6 +1730,55 @@ namespace NavAR.Presentation
             _navigationSessionService.SetRouteNodeIds(nodeIds);
         }
 
+        private void UpdateNavigationMarkersForActiveRoute()
+        {
+            if (markerManager == null)
+            {
+                return;
+            }
+
+            if (_hybridCalculator == null || _stateManager?.Context == null)
+            {
+                markerManager.UpdateMarkers(null, null);
+                return;
+            }
+
+            var routeNodes = _hybridCalculator.GetLastNodePath();
+            if (routeNodes == null || routeNodes.Count == 0)
+            {
+                markerManager.UpdateMarkers(null, null);
+                return;
+            }
+
+            var currentFloorId = _stateManager.Context.CurrentFloorId;
+            Vector3? targetWorldPosition = null;
+            Vector3? stairWorldPosition = null;
+
+            var targetNode = routeNodes[routeNodes.Count - 1];
+            if (targetNode != null && targetNode.floor_id == currentFloorId)
+            {
+                targetWorldPosition = new Vector3(targetNode.x, targetNode.y, targetNode.z);
+            }
+
+            for (var i = 0; i < routeNodes.Count - 1; i++)
+            {
+                var currentNode = routeNodes[i];
+                var nextNode = routeNodes[i + 1];
+                if (currentNode == null || nextNode == null)
+                {
+                    continue;
+                }
+
+                if (currentNode.floor_id == currentFloorId && nextNode.floor_id != currentFloorId)
+                {
+                    stairWorldPosition = new Vector3(currentNode.x, currentNode.y, currentNode.z);
+                    break;
+                }
+            }
+
+            markerManager.UpdateMarkers(targetWorldPosition, stairWorldPosition);
+        }
+
         private void RequestFullSceneReset()
         {
             _floorTransitionService?.ResetToMainScene();
@@ -1301,26 +1815,19 @@ namespace NavAR.Presentation
             ResetFeedbackState();
         }
 
-        private void OnSignOutRequested()
+        private void OnOpenHelpPanel()
         {
-            Debug.Log("Sign out action placeholder. Auth flow not implemented.");
+            NavigateToContextualPanel(ContextualPanelKind.Help);
         }
 
-        private void OnAboutRequested()
+        private void OnOpenAboutPanel()
         {
-            SetState(AppState.ComingSoon);
+            NavigateToContextualPanel(ContextualPanelKind.About);
         }
 
-        private void OnOpenHelpVideo()
+        private void OnOutdoorNavigationClicked()
         {
-            if (Application.internetReachability == NetworkReachability.NotReachable)
-            {
-                Debug.LogWarning("[UIManager] Help video unavailable: no internet connection.");
-                SetState(AppState.ComingSoon);
-                return;
-            }
-
-            Application.OpenURL(HelpVideoUrl);
+            Debug.Log("Opening Outdoor Map...");
         }
 
         private void OnQrCodeFound(string qrPayload)
@@ -1454,7 +1961,7 @@ namespace NavAR.Presentation
             }
             else if (evt.EventType == GuidanceEventType.DestinationReached)
             {
-                CompleteNavigationSession(SessionStatus.Completed);
+                CompleteNavigationSession(SessionStatus.Completed, AppState.DestinationReached);
             }
         }
 
@@ -1480,6 +1987,7 @@ namespace NavAR.Presentation
             _navigationProgressTracker.InitializeRoute(path, canCompleteNavigation: true);
             _navigationSessionService?.ResetVisitedNodes();
             UpdateRouteNodeIdsForSession();
+            UpdateNavigationMarkersForActiveRoute();
             if (_navigationProgressTracker is NavigationProgressTracker trackerImpl)
             {
                 trackerImpl.NotifyRouteRecalculated();
@@ -1516,6 +2024,7 @@ namespace NavAR.Presentation
             StopDynamicNavigationLoop(clearInstruction: true);
             StopTransitionArrivalWatch();
             _pathRenderer?.ClearPath();
+            markerManager?.ClearMarkers();
             _navigationProgressTracker?.Reset();
             _navigationSessionService?.ClearSession();
             _lastNavigationSnapshot = null;
@@ -1527,7 +2036,7 @@ namespace NavAR.Presentation
             RequestFullSceneReset();
         }
 
-        private void CompleteNavigationSession(SessionStatus status)
+        private void CompleteNavigationSession(SessionStatus status, AppState nextState = AppState.Feedback)
         {
             if (_stateManager == null || _stateManager.CurrentState != AppState.Navigating)
             {
@@ -1567,11 +2076,26 @@ namespace NavAR.Presentation
             StopDynamicNavigationLoop(clearInstruction: true);
             StopTransitionArrivalWatch();
             _pathRenderer?.ClearPath();
+            markerManager?.ClearMarkers();
             _navigationProgressTracker?.Reset();
             _stateManager.Context?.ClearSession();
             ResetNavigationServiceReferences();
             RequestFullSceneReset();
-            _stateManager.ChangeState(AppState.Feedback);
+            _stateManager.ChangeState(nextState);
+        }
+
+        private void ReturnHomeFromDestinationReached()
+        {
+            StopDynamicNavigationLoop(clearInstruction: true);
+            StopTransitionArrivalWatch();
+            _pathRenderer?.ClearPath();
+            markerManager?.ClearMarkers();
+            _navigationProgressTracker?.Reset();
+            _navigationSessionService?.ClearSession();
+            _lastNavigationSnapshot = null;
+            ResetFeedbackState();
+            _stateManager?.Context?.ClearSession();
+            SetState(AppState.Home);
         }
 
         private void OnDestinationGroupSelected(DestinationGroup group)

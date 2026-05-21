@@ -1,0 +1,50 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="ContextualScreens.uss" />
+
+    <ui:VisualElement class="context-screen about-screen">
+        <ui:VisualElement class="context-top-bar">
+            <ui:Button name="BtnScreenBack" text="&#x2190;" class="context-back" />
+            <ui:Label text="About NavAR" class="context-top-title" />
+        </ui:VisualElement>
+
+        <ui:ScrollView class="context-scroll">
+            <ui:VisualElement class="context-content">
+                <ui:VisualElement class="context-hero about-hero">
+                    <!-- Reuse help hero icon so icon asset is available in the theme -->
+                    <ui:VisualElement class="context-hero-icon help-hero-icon" />
+                    <ui:Label text="NavAR" class="context-title" />
+                    <ui:Label text="Indoor AR navigation designed for accessibility and campus-scale routing." class="context-subtitle" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="VERSION" class="context-section-label" />
+                    <ui:Label text="v1.0.0 (build 1)" class="context-card-title" />
+                    <ui:Label text="Built with Unity and AR Foundation. For build details, see runtime settings." class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="PRIVACY &amp; DATA" class="context-section-label" />
+                    <ui:Label text="NavAR processes only the data needed for positioning and navigation. Camera frames are used locally and not uploaded." class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="CREDITS" class="context-section-label" />
+                    <ui:Label text="Development: NavAR team" class="context-card-body" />
+                    <ui:Label text="AR &amp; mapping: AR Foundation, Unity" class="context-card-body" />
+                    <ui:Label text="Routing: Hybrid Dijkstra + mesh routing" class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-card">
+                    <ui:Label text="LICENSES" class="context-section-label" />
+                    <ui:Label text="Third-party libraries used under their respective licenses. See project documentation for details." class="context-card-body" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="context-help-grid">
+                    <ui:Button name="BtnContextOpenSettings" text="Open Settings" class="context-secondary-button" />
+                </ui:VisualElement>
+
+                <ui:Label text="Contact: support@navar.example" class="context-small" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>
